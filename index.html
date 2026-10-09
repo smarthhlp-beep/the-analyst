@@ -1,12 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>The Analyst</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE ANALYST</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#10151c; --paper:#eef0e9; --panel:#161d27; --line:#2a3340;
+    --amber:#c9973f; --green:#4c7a5c; --red:#a8503f; --muted:#8a93a1;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--ink);color:var(--paper);}
+  body{font-family:'IBM Plex Sans',sans-serif;line-height:1.5;}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:500;margin:0;}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px;}
+  header.hero{padding:64px 0 48px;border-bottom:1px solid var(--line);}
+  .kicker{font-size:14px;color:var(--amber);margin-bottom:14px;}
+  h1.title{font-size:44px;line-height:1.08;max-width:520px;}
+  .sub{margin-top:20px;font-size:17px;color:var(--muted);max-width:480px;}
+  section{padding:48px 0;border-bottom:1px solid var(--line);}
+  .label{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:10px;}
+  textarea{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:3px;color:var(--paper);font-family:'IBM Plex Sans',sans-serif;font-size:15.5px;padding:14px;min-height:88px;resize:vertical;}
+  textarea:focus{outline:none;border-color:var(--amber);}
+  .analyze-btn{margin-top:16px;background:var(--amber);color:#1a1305;border:none;padding:12px 22px;font-size:15px;font-weight:600;border-radius:3px;cursor:pointer;}
+  .analyze-btn:disabled{opacity:0.5;cursor:default;}
+  .result{margin-top:28px;}
+  .stage h3{font-size:13px;font-family:'IBM Plex Mono',monospace;color:var(--amber);margin-bottom:8px;font-weight:500;}
+  .stage-body{font-size:15px;color:#dfe2da;white-space:pre-wrap;}
+  .action-tag{display:inline-block;padding:4px 10px;border-radius:3px;font-size:12.5px;font-family:'IBM Plex Mono',monospace;margin-bottom:10px;}
+  .tag-accumulate{background:rgba(76,122,92,0.25);color:#8fc4a3;}
+  .tag-hold{background:rgba(138,147,161,0.2);color:#b7bec9;}
+  .tag-reduce{background:rgba(201,151,63,0.2);color:#e0b567;}
+  .tag-exit,.tag-extraction{background:rgba(168,80,63,0.25);color:#e0917f;}
+  .disclaimer{margin-top:24px;padding:14px;background:var(--panel);border-left:2px solid var(--amber);font-size:13px;color:var(--muted);}
+  .loading{color:var(--muted);font-size:14px;font-family:'IBM Plex Mono',monospace;}
+  .signup{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  input[type=email]{flex:1;min-width:200px;background:var(--panel);border:1px solid var(--line);border-radius:3px;color:var(--paper);padding:11px 14px;font-size:14.5px;}
+  .signup-btn{background:var(--paper);color:var(--ink);border:none;padding:11px 20px;border-radius:3px;font-weight:600;cursor:pointer;}
+  .signup-msg{margin-top:10px;font-size:13.5px;}
+  footer{padding:32px 0;text-align:center;color:var(--muted);font-size:12.5px;}
+</style>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding: 4rem 1rem;">
-  <h1>The Analyst</h1>
-  <p>Coming soon.</p>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Research, not rumor</div>
+    <h1 class="title">Know what a headline actually means for your money.</h1>
+    <p class="sub">Paste a news event or a ticker. THE ANALYST traces the connection, sizes the impact, and tells you what a disciplined investor would consider doing — before panic decides for you.</p>
+  </header>
+
+  <section id="demo">
+    <div class="label">TRY IT</div>
+    <textarea id="input" placeholder="Paste a headline, an event, or a ticker..."></textarea>
+    <div><button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">Analyze</button></div>
+    <div id="result" class="result"></div>
+  </section>
+
+  <section id="signup">
+    <div class="label">STAY IN THE LOOP</div>
+    <h2 style="font-size:22px;">Get early access</h2>
+    <div class="signup">
+      <input type="email" id="emailInput" placeholder="you@email.com">
+      <button class="signup-btn" onclick="submitEmail()">Notify me</button>
+    </div>
+    <div class="signup-msg" id="signupMsg"></div>
+  </section>
+
+  <footer>THE ANALYST — educational research tool, not licensed investment advice.</footer>
+</div>
+
+<script>
+async function runAnalysis(){
+  const input = document.getElementById('input').value.trim();
+  if(!input) return;
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  const resultEl = document.getElementById('result');
+  resultEl.innerHTML = '<div class="loading">Running analysis...</div>';
+
+  try{
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input })
+    });
+    const parsed = await response.json();
+    if(!response.ok){ throw new Error(parsed.error || 'Analysis failed'); }
+    renderResult(parsed);
+  }catch(err){
+    resultEl.innerHTML = '<div class="loading">Something went wrong. Try again.</div>';
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function tagClass(action){
+  const a=(action||'').toUpperCase();
+  if(a.includes('ACCUM'))return'tag-accumulate';
+  if(a.includes('HOLD'))return'tag-hold';
+  if(a.includes('REDUCE'))return'tag-reduce';
+  if(a.includes('EXIT'))return'tag-exit';
+  if(a.includes('EXTRACT'))return'tag-extraction';
+  return'tag-hold';
+}
+function escapeHtml(s){ return s? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+function renderResult(p){
+  const el = document.getElementById('result');
+  let html = `<div class="stage"><h3>INPUT</h3><div class="stage-body">${escapeHtml(p.input_summary)}</div></div>`;
+  html += `<div class="stage"><h3>CONNECTION</h3>`;
+  (p.connections||[]).forEach(c=>{ html += `<div class="stage-body"><b>${escapeHtml(c.entity)}</b> — ${escapeHtml(c.type)}<br>${escapeHtml(c.why)}</div><br>`; });
+  html += `</div><div class="stage"><h3>OPPORTUNITY</h3>`;
+  (p.impact||[]).forEach(i=>{ html += `<div class="stage-body"><b>${escapeHtml(i.entity)}</b> — ${escapeHtml(i.direction)}, est. ${escapeHtml(i.range)} (confidence: ${escapeHtml(i.confidence)})<br>Short: ${escapeHtml(i.short_term)}<br>Medium: ${escapeHtml(i.medium_term)}<br>Long: ${escapeHtml(i.long_term)}</div><br>`; });
+  html += `</div><div class="stage"><h3>ACTION</h3>`;
+  (p.action||[]).forEach(a=>{ html += `<div class="action-tag ${tagClass(a.action)}">${escapeHtml(a.action)}</div><div class="stage-body"><b>${escapeHtml(a.entity)}</b><br>${escapeHtml(a.reasoning)}<br><i>${escapeHtml(a.projected_exposure)}</i></div><br>`; });
+  html += `</div><div class="disclaimer">This is educational research, not licensed investment advice. Verify independently before acting.</div>`;
+  el.innerHTML = html;
+}
+
+async function submitEmail(){
+  const input = document.getElementById('emailInput');
+  const email = input.value.trim();
+  const msg = document.getElementById('signupMsg');
+  if(!email || !email.includes('@')){ msg.textContent='Enter a valid email.'; msg.style.color='#e0917f'; return; }
+  try{
+    const res = await fetch('/api/signup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+    if(!res.ok) throw new Error('failed');
+    msg.textContent = "You're on the list.";
+    msg.style.color = '#8fc4a3';
+    input.value='';
+  }catch(e){
+    msg.textContent = 'Could not save, try again.';
+    msg.style.color = '#e0917f';
+  }
+}
+</script>
 </body>
 </html>

@@ -146,6 +146,89 @@ async function submitEmail(){
     msg.style.color = '#e0917f';
   }
 }
+function readFileAsBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(String(r.result).split(',')[1] || '');
+    r.onerror = ()=> reject(new Error('Could not read file'));
+    r.readAsDataURL(file);
+  });
+}
+
+function riskColor(score){
+  if(score >= 70) return '#c62828';
+  if(score >= 40) return '#e08a00';
+  return '#2e9e5b';
+}
+
+function wpList(title, items){
+  if(!items || !items.length) return '';
+  let h = `<div class="stage"><h3>${title}</h3>`;
+  items.forEach(i=>{ h += `<div class="stage-body">• ${escapeHtml(String(i))}</div>`; });
+  return h + '</div>';
+}
+
+async function runWhitepaper(){
+  const file = document.getElementById('wpFile').files[0];
+  const text = document.getElementById('wpText').value.trim();
+  const out = document.getElementById('wpResult');
+  const btn = document.getElementById('wpBtn');
+
+  if(!file && !text){
+    out.innerHTML = '<div class="loading">Upload a PDF or paste the text first.</div>';
+    return;
+  }
+  if(file && file.size > 3 * 1024 * 1024){
+    out.innerHTML = '<div class="loading">That PDF is over 3 MB. Paste the text instead, or use a smaller file.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  out.innerHTML = '<div class="loading">Reading the white paper... this can take up to a minute.</div>';
+
+  try{
+    const payload = file ? { pdfBase64: await readFileAsBase64(file) } : { text };
+    const res = await fetch('/api/whitepaper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!res.ok){ throw new Error(data.error || 'Failed'); }
+    renderWhitepaper(data);
+  }catch(e){
+    out.innerHTML = '<div class="loading">Something went wrong. Try again.</div>';
+    console.error(e);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function renderWhitepaper(d){
+  const out = document.getElementById('wpResult');
+  const score = d.risk_score || 0;
+  const color = riskColor(score);
+  let html = `<div class="stage">
+    <h3>RISK SCORE</h3>
+    <div style="font-size:44px;font-weight:700;color:${color};line-height:1.1;">${score}%</div>
+    <div style="font-weight:600;color:${color};margin-bottom:10px;">${escapeHtml(d.risk_level)} risk</div>
+    <div style="height:10px;border-radius:999px;background:rgba(128,128,128,0.25);overflow:hidden;">
+      <div style="height:100%;width:${score}%;background:${color};"></div>
+    </div>
+    <div class="stage-body" style="margin-top:12px;">${escapeHtml(d.score_rationale)}</div>
+  </div>`;
+  html += `<div class="stage"><h3>WHAT THE DOCUMENT CLAIMS</h3><div class="stage-body">${escapeHtml(d.document_summary)}</div></div>`;
+  html += `<div class="stage"><h3>RISK FACTORS</h3>`;
+  (d.risk_factors || []).forEach(f=>{
+    html += `<div class="stage-body"><b>${escapeHtml(f.category)}</b> (${escapeHtml(f.severity)}): ${escapeHtml(f.finding)}</div><br>`;
+  });
+  html += `</div>`;
+  html += wpList('RED FLAGS', d.red_flags);
+  html += wpList('STRENGTHS', d.strengths);
+  html += wpList('QUESTIONS TO ASK THE COMPANY', d.questions_to_ask);
+  html += `<div class="disclaimer">This score is an AI assessment based only on the document provided. It is not a verified probability and not investment advice. Companies write their own white papers, so verify claims independently.</div>`;
+  out.innerHTML = html;
+}
 </script>
 </body>
 </html>

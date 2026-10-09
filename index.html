@@ -58,6 +58,15 @@
     <div id="result" class="result"></div>
   </section>
 
+  <section id="whitepaper">
+    <div class="label">WHITE PAPER RISK CHECK</div>
+    <h2 style="font-size:22px;">Rate a company's white paper</h2>
+    <p style="font-size:14px;opacity:0.75;margin:8px 0 14px;">Upload a PDF (max 3 MB) or paste the text. You get a risk score from 0% (low risk) to 100% (high risk) with the reasons behind it.</p>
+    <input type="file" id="wpFile" accept="application/pdf,.pdf" style="margin-bottom:12px;max-width:100%;">
+    <textarea id="wpText" placeholder="...or paste the white paper text here"></textarea>
+    <div><button class="analyze-btn" id="wpBtn" onclick="runWhitepaper()">Rate risk</button></div>
+    <div id="wpResult" class="result"></div>
+  </section>
   <section id="signup">
     <div class="label">STAY IN THE LOOP</div>
     <h2 style="font-size:22px;">Get early access</h2>

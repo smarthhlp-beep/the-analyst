@@ -60,6 +60,17 @@
     <p class="sub">Paste a news event or a ticker. THE ANALYST traces the connection, sizes the impact, and tells you what a disciplined investor would consider doing — before panic decides for you.</p>
   </header>
 
+  <section id="gate">
+    <div class="label">FREE EARLY ACCESS</div>
+    <h2 style="font-size:22px;">Sign up to unlock THE ANALYST</h2>
+    <p style="font-size:14px;color:#c9973f;margin:8px 0 0;">Free during early access. Once THE ANALYST officially launches, it will no longer be free.</p>
+    <div class="signup">
+      <input type="email" id="gateEmail" placeholder="you@email.com">
+      <button class="signup-btn" id="gateBtn" onclick="gateSignup()">Sign up free</button>
+    </div>
+    <div class="signup-msg" id="gateMsg"></div>
+    <p style="font-size:12px;opacity:0.7;margin:10px 0 0;">By signing up, you agree that we may email you about THE ANALYST. We will only use your email for that purpose.</p>
+  </section>
   <section id="demo">
     <div class="label">TRY IT</div>
     <textarea id="input" placeholder="Paste a headline, an event, or a ticker..."></textarea>
@@ -242,6 +253,60 @@ function renderWhitepaper(d){
   html += `<div class="disclaimer">This score is an AI assessment based only on the document provided. It is not a verified probability and not investment advice. Companies write their own white papers, so verify claims independently.</div>`;
   out.innerHTML = html;
 }
+let sessionUnlocked = false;
+const UNLOCK_KEY = 'analystUnlocked';
+
+function isUnlocked(){
+  if(sessionUnlocked) return true;
+  try{ return localStorage.getItem(UNLOCK_KEY) === '1'; }catch(e){ return false; }
+}
+
+function applyGate(){
+  const unlocked = isUnlocked();
+  const gate = document.getElementById('gate');
+  const oldSignup = document.getElementById('signup');
+  if(gate) gate.style.display = unlocked ? 'none' : '';
+  ['demo','whitepaper'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.style.opacity = unlocked ? '' : '0.35';
+    el.style.pointerEvents = unlocked ? '' : 'none';
+  });
+  if(oldSignup) oldSignup.style.display = 'none';
+}
+
+async function gateSignup(){
+  const input = document.getElementById('gateEmail');
+  const msg = document.getElementById('gateMsg');
+  const btn = document.getElementById('gateBtn');
+  const email = input.value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    msg.textContent = 'Enter a valid email.';
+    msg.style.color = '#e0917f';
+    return;
+  }
+  btn.disabled = true;
+  try{
+    const res = await fetch('/api/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if(!res.ok) throw new Error('failed');
+    sessionUnlocked = true;
+    try{ localStorage.setItem(UNLOCK_KEY, '1'); }catch(e){}
+    msg.textContent = "You're in! Enjoy it free during early access.";
+    msg.style.color = '#8fc4a3';
+    setTimeout(applyGate, 1200);
+  }catch(e){
+    msg.textContent = 'Could not save, try again.';
+    msg.style.color = '#e0917f';
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+applyGate();
 </script>
 </body>
 </html>

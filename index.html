@@ -41,10 +41,19 @@
   .signup-btn{background:var(--paper);color:var(--ink);border:none;padding:11px 20px;border-radius:3px;font-weight:600;cursor:pointer;}
   .signup-msg{margin-top:10px;font-size:13.5px;}
   footer{padding:32px 0;text-align:center;color:var(--muted);font-size:12.5px;}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:1px solid var(--line);}
+  .brand{display:flex;align-items:center;gap:10px;color:var(--paper);text-decoration:none;font-family:'Fraunces',serif;font-weight:600;font-size:18px;letter-spacing:0.02em;}
+  .brand img{height:36px;width:auto;display:block;}
+  .links a{color:var(--muted);text-decoration:none;font-size:14px;margin-left:20px;}
+  .links a:hover{color:var(--amber);}
 </style>
 </head>
 <body>
 <div class="wrap">
+    <nav class="nav">
+    <a href="/" class="brand"><img src="/logo.png" alt="THE ANALYST logo"><span>THE ANALYST</span></a>
+    <div class="links"><a href="/">Home</a><a href="/about.html">About</a></div>
+  </nav>
   <header class="hero">
     <div class="kicker">Research, not rumor</div>
     <h1 class="title">Know what a headline actually means for your money.</h1>

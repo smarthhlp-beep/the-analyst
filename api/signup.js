@@ -9,8 +9,21 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Invalid email' });
   }
 
-  // For now, signups are stored in Vercel's Logs tab.
   console.log('NEW_SIGNUP:', email, new Date().toISOString());
+
+  const url = process.env.SHEET_WEBHOOK_URL;
+  if (url) {
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ email, secret: process.env.SHEET_SECRET || '' }),
+      });
+      if (!r.ok) console.error('Sheet webhook failed:', r.status);
+    } catch (e) {
+      console.error('Sheet webhook error:', e);
+    }
+  }
 
   return res.status(200).json({ ok: true });
 };
